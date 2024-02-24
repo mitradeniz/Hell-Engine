@@ -9,7 +9,26 @@
 
 </head>
 <body>
+    <input type="file" id="fileInput" />
+    <script>
+        document.getElementById('fileInput')
+            .addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                const reader = new FileReader();
 
+                reader.onload = function () {
+                    const content = reader.result;
+                    console.log(content);
+                    a = content
+                };
+
+                reader.onerror = function () {
+                    console.error('Error reading the file');
+                };
+
+                reader.readAsText(file, 'utf-8');
+            });
+    </script>
 </body>
 <script src="renderer.js"></script>
 </html>

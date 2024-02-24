@@ -1,3 +1,6 @@
+let a = ""
+console.log(a)
+
 const height = 1000;
 const width = 1000;
 
@@ -53,16 +56,132 @@ class MatriX4x4 {
 
 
 
-function drawTriangle(coordA, coordB, coordC) {
+function drawTriangle(coordA, coordB, coordC, dp) {
+    let lumen = 'rgb(' + (dp*256 - 40) +','+ (dp*256 + 40 ) +','+ (dp*256 + 40) + ')'
 
+    //ctx.strokeStyle = lumen
+    ctx.fillStyle = lumen
     ctx.beginPath();
     ctx.moveTo(coordA.x, coordA.y);
     ctx.lineTo(coordB.x, coordB.y);
     ctx.lineTo(coordC.x, coordC.y);
     ctx.lineTo(coordA.x, coordA.y);
+    ctx.fill()
     ctx.stroke();
     ctx.closePath();
 }
+
+function loadFromObjFile(objText) {
+    let mesh = new Mesh();
+
+    let lines = objText.split("\n");
+
+    let vertices = []; // Array to store processed vertices
+    let vertexIndices = []; // Array to store indices for triangle faces
+
+    for (let line of lines) {
+        let words = line.split(" ");
+
+        if (words[0] === "v") {
+            let x = parseFloat(words[1]);
+            let y = parseFloat(words[2]);
+            let z = parseFloat(words[3]);
+
+            // Create a new Vector3D object and add it to the vertices array
+            vertices.push(new Vector3D(x, y, z));
+        } else if (words[0] === "f") {
+            // Extract vertex indices, considering potential offset and slash notation
+            let v1 = parseInt(words[1].split("/")[0]) - 1;
+            let v2 = parseInt(words[2].split("/")[0]) - 1;
+            let v3 = parseInt(words[3].split("/")[0]) - 1;
+
+            // Add indices to the vertexIndices array
+            vertexIndices.push(v1);
+            vertexIndices.push(v2);
+            vertexIndices.push(v3);
+
+            // Create triangle objects and add them to the mesh (assuming Mesh has addTriangles method)
+            mesh.addTriangles(
+                new Triangle(vertices[v1], vertices[v2], vertices[v3])
+            );
+        }
+    }
+    //console.log(mesh); // Log the processed mesh to the console
+    return mesh // Call the game loop function with the processed mesh
+}
+
+
+//console.log("ASDASF" , loadFromObjFile(a))
+
+let fileName = "VideoShip.obj";
+/*
+// Değişkeni Promise dışında tanımlayın
+const myPromise = new Promise(async (resolve, reject) => {
+    try {
+        // Assuming readFile returns the OBJ text content as a string
+        const objText = await a;
+
+        // Call loadFromObjFile to process the OBJ text and create the mesh
+        const mesh = await loadFromObjFile(objText);
+
+        // Resolve the promise with the created mesh
+        resolve(mesh);
+
+    } catch (error) {
+        // Reject the promise with an informative error message
+        reject(`Error loading OBJ file: ${error.message}`);
+    }
+});
+
+
+myPromise
+    .then(shipObj => {
+        console.log("access");
+        obj = shipObj// Successfully processed mesh
+    })
+    .catch(error => {
+        console.log("error"); // Handle errors gracefully
+    });
+
+
+function readFile(filePath) {
+    let objText = ""
+    let newObj = new Mesh()
+
+    if (typeof filePath === 'string') { // Check if string path
+        fetch(filePath) // Fetch file contents
+            .then(response => response.blob())
+            .then(blob => {
+                const reader = new FileReader();
+                reader.onload = function() {
+                    const text = reader.result;
+                    //console.log(text);
+                    objText += text
+                    loadFromObjFile(objText)
+
+                    console.log(objText);
+
+                };
+                reader.readAsText(blob);
+
+            })
+            .catch(error => console.error("Error fetching file:", error));
+    } else if (filePath instanceof Blob) { // Check if Blob object
+        const reader = new FileReader();
+        reader.onload = function() {
+            const text = reader.result;
+
+        };
+        reader.readAsText(filePath);
+    } else {
+        console.error("Invalid file path or Blob object:", filePath);
+    }
+    console.log(objText);
+
+}
+
+ */
+
 
 
 let projMatrix = new MatriX4x4();
@@ -77,6 +196,10 @@ projMatrix.arr4x4[1][1] = fFovRad;
 projMatrix.arr4x4[2][2] = fFar / (fFar - fNear);
 projMatrix.arr4x4[3][2] = (-fFar * fNear) / (fFar -fNear);
 projMatrix.arr4x4[2][3] = 1.0;
+
+let vCamera = new Vector3D(0, 0, 0)
+let lightDirection = new Vector3D(0, 0, -1)
+
 
 function multiplyMatrixVector(inputMatrix, projMatrix) {
     let projectedMatrix = new Vector3D();
@@ -96,10 +219,11 @@ function multiplyMatrixVector(inputMatrix, projMatrix) {
 }
 
 function render(elapsedTime) {
+    let cube = loadFromObjFile(a)
+    console.log(cube)
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    let cube = new Mesh()
-
+/*
     coordA = new Vector3D(0, 0, 0)
     coordB = new Vector3D(1, 0, 0)
     coordC = new Vector3D(0, 0, 1)
@@ -134,6 +258,8 @@ function render(elapsedTime) {
     cube.addTriangles(new Triangle(coordD, coordC, coordA));
     cube.addTriangles(new Triangle(coordD, coordA, coordB));
 
+ */
+
     let matRotZ = new MatriX4x4()
     let matRotX = new MatriX4x4()
     let fTheta = 0.0
@@ -155,6 +281,8 @@ function render(elapsedTime) {
     matRotX.arr4x4[2][2] = Math.cos(fTheta / 2)
     matRotX.arr4x4[3][3] = 1
 
+    //console.log(cube.triangles)
+
     for(let i = 0; i < cube.triangles.length; i++) {
         let triRotatedZ;
         let triRotatedZX;
@@ -171,40 +299,78 @@ function render(elapsedTime) {
         let projectedBZX = multiplyMatrixVector(projectedBZ, matRotX)
         let projectedCZX = multiplyMatrixVector(projectedCZ, matRotX)
 
+        // Offset into the screen
         triRotatedZX = new Triangle(projectedAZX, projectedBZX, projectedCZX)
 
         let triTranslated = triRotatedZX
         let triProjected;
 
-        triTranslated.a.z = triRotatedZX.a.z + 3.0;
-        triTranslated.b.z = triRotatedZX.b.z + 3.0;
-        triTranslated.c.z = triRotatedZX.c.z + 3.0;
+        triTranslated.a.z = triRotatedZX.a.z + 0.15;
+        triTranslated.b.z = triRotatedZX.b.z + 0.15;
+        triTranslated.c.z = triRotatedZX.c.z + 0.15;
 
-        let projectedA = multiplyMatrixVector(triTranslated.a, projMatrix);
-        let projectedB = multiplyMatrixVector(triTranslated.b, projMatrix);
-        let projectedC = multiplyMatrixVector(triTranslated.c, projMatrix);
+        let normal = new Vector3D()
+        let line1 = new Vector3D()
+        let line2 = new Vector3D()
 
-        triProjected = new Triangle(projectedA, projectedB, projectedC)
+        line1.x = triTranslated.b.x - triTranslated.a.x
+        line1.y = triTranslated.b.y - triTranslated.a.y
+        line1.z = triTranslated.b.z - triTranslated.a.z
 
-        triProjected.a.x += 1;
-        triProjected.a.y += 1;
-        triProjected.b.x += 1;
-        triProjected.b.y += 1;
-        triProjected.c.x += 1;
-        triProjected.c.y += 1;
+        line2.x = triTranslated.c.x - triTranslated.a.x
+        line2.y = triTranslated.c.y - triTranslated.a.y
+        line2.z = triTranslated.c.z - triTranslated.a.z
 
-        triProjected.a.x *= 0.5 * width;
-        triProjected.a.y *= 0.5 * height;
-        triProjected.b.x *= 0.5 * width;
-        triProjected.b.y *= 0.5 * height;
-        triProjected.c.x *= 0.5 * width;
-        triProjected.c.y *= 0.5 * height;
+        normal.x = line1.y * line2.z - line1.z * line2.y
+        normal.y = line1.z * line2.x - line1.x * line2.z
+        normal.z = line1.x * line2.y - line1.y * line2.x
 
-        console.log(triProjected.a, triProjected.b, triProjected.c)
-        //console.log(triTranslated)
+        let l = Math.sqrt(normal.x**2 + normal.y**2 + normal.z**2)
+        normal.x /= l
+        normal.y /= l
+        normal.z /= l
+
+        //if (normal.z < 0)
+        if (normal.x * (triTranslated.a.x - vCamera.x) +
+            normal.y * (triTranslated.a.y - vCamera.y) +
+            normal.z * (triTranslated.a.z - vCamera.z) < 0.0) {
+            // Illumination
+            let l = Math.sqrt(lightDirection.x**2 + lightDirection.y**2 + lightDirection.z**2)
+            lightDirection.x /= l
+            lightDirection.y /= l
+            lightDirection.z /= l
+
+            let dp = normal.x * lightDirection.x + normal.y * lightDirection.y + normal.z * lightDirection.z
+
+            // Project triangles from 3D --> 2D
+            let projectedA = multiplyMatrixVector(triTranslated.a, projMatrix);
+            let projectedB = multiplyMatrixVector(triTranslated.b, projMatrix);
+            let projectedC = multiplyMatrixVector(triTranslated.c, projMatrix);
+
+            triProjected = new Triangle(projectedA, projectedB, projectedC)
+
+            // Scale into view
+            triProjected.a.x += 1;
+            triProjected.a.y += 1;
+            triProjected.b.x += 1;
+            triProjected.b.y += 1;
+            triProjected.c.x += 1;
+            triProjected.c.y += 1;
+
+            triProjected.a.x *= 0.5 * width;
+            triProjected.a.y *= 0.5 * height;
+            triProjected.b.x *= 0.5 * width;
+            triProjected.b.y *= 0.5 * height;
+            triProjected.c.x *= 0.5 * width;
+            triProjected.c.y *= 0.5 * height;
+
+            //console.log(dp)
+            //console.log(triTranslated)
 
 
-        drawTriangle(triProjected.a, triProjected.b, triProjected.c);
+            drawTriangle(triProjected.a, triProjected.b, triProjected.c, dp);
+
+        }
     }
 
 }
@@ -224,7 +390,7 @@ function gameLoop() {
 
     // Çizimi güncelle
     render(seconds);
-    
+
     window.requestAnimationFrame(gameLoop);
 }
 
