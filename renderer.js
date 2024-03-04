@@ -305,9 +305,9 @@ function render(elapsedTime) {
         let triTranslated = triRotatedZX
         let triProjected;
 
-        triTranslated.a.z = triRotatedZX.a.z + 0.15;
-        triTranslated.b.z = triRotatedZX.b.z + 0.15;
-        triTranslated.c.z = triRotatedZX.c.z + 0.15;
+        triTranslated.a.z = triRotatedZX.a.z + 3.15;
+        triTranslated.b.z = triRotatedZX.b.z + 3.15;
+        triTranslated.c.z = triRotatedZX.c.z + 3.15;
 
         let normal = new Vector3D()
         let line1 = new Vector3D()
